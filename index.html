@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>GxP Training System</title>
+</head>
+<body>
+
+<h2>GxP Training Tracker</h2>
+
+<label>Role:</label> <select id="role">
+
+  <option>User</option>
+  <option>Admin</option>
+</select>
+
+<br><br>
+
+<input type="file" id="fileInput" />
+<button onclick="loadExcel()">Upload Excel</button>
+
+<br><br>
+
+<table border="1" id="table"></table>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+<script>
+
+let data = JSON.parse(localStorage.getItem("trainingData") || "[]");
+
+function loadExcel() {
+  const file = document.getElementById('fileInput').files[0];
+  const reader = new FileReader();
+
+  reader.onload = function(e) {
+    const wb = XLSX.read(e.target.result, { type: 'binary' });
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+    localStorage.setItem("trainingData", JSON.stringify(data));
+    render();
+  };
+
+  reader.readAsBinaryString(file);
+}
+
+function render() {
+
+  let html = "";
+
+  data.forEach((row, i) => {
+    html += "<tr>";
+
+    row.forEach((cell, j) => {
+
+      if (i === 0) {
+        html += "<th>" + cell + "</th>";
+      } else {
+        html += `<td contenteditable="true"
+                  onblur="update(${i},${j},this.innerText)">
+                  ${cell || ""}
+                </td>`;
+      }
+
+    });
+
+    if (i !== 0) {
+      html += `<td>
+        <button onclick="submit(${i})">Submit</button>
+        <button onclick="approve(${i})">Approve</button>
+      </td>`;
+    }
+
+    html += "</tr>";
+  });
+
+  document.getElementById("table").innerHTML = html;
+}
+
+function update(i, j, value) {
+  data[i][j] = value;
+  save();
+}
+
+function submit(i) {
+  const role = document.getElementById("role").value;
+
+  if (role !== "User") {
+    alert("Only User can submit");
+    return;
+  }
+
+  data[i][5] = "Yes";
+  data[i][4] = "Pending";
+
+  save();
+}
+
+function approve(i) {
+  const role = document.getElementById("role").value;
+
+  if (role !== "Admin") {
+    alert("Only Admin can approve");
+    return;
+  }
+
+  if (data[i][5] !== "Yes") {
+    alert("Submit first");
+    return;
+  }
+
+  data[i][6] = "Approved";
+  data[i][4] = "Completed";
+
+  save();
+}
+
+function save() {
+  localStorage.setItem("trainingData", JSON.stringify(data));
+  render();
+}
+
+render();
+
+</script>
+
+</body>
+</html>
