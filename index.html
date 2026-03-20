@@ -79,13 +79,40 @@ function loadExcel() {
 
     const sheet = wb.Sheets[wb.SheetNames[0]];
 
-    data = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+let raw = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+
+// Convert MATRIX → NORMAL FORMAT
+data = [];
+
+let headers = raw[0]; // first row
+
+// New header
+data.push(["Emp Name", "Dept", "Module No", "Applicable", "Status"]);
+
+for (let i = 1; i < raw.length; i++) {
+
+  let row = raw[i];
+  let emp = row[0];
+  let dept = row[1];
+
+  for (let j = 2; j < headers.length; j++) {
+
+    let module = headers[j];
+    let value = row[j];
+
+    if (value === "✔") {
+      data.push([emp, dept, module, "✔", "Pending"]);
+    }
+
+  }
+}
 
     localStorage.setItem("trainingData", JSON.stringify(data));
 
-    render();
-  };
-
+    html += `<td>
+  <button onclick="submit(${i})">Submit</button>
+  <button onclick="approve(${i})">Approve</button>
+</td>`;
   reader.readAsArrayBuffer(file);
 }
 
@@ -105,7 +132,7 @@ function render() {
 
         let editable = (j < 4); // only first columns editable
 
-        html += `<td contenteditable="${editable}"
+        html += `<td contenteditable="${j === 4 && data[i][3] === '✔'}"="${editable}"
                     onblur="update(${i},${j},this.innerText)">
                     ${cell || ""}
                  </td>`;
@@ -133,36 +160,6 @@ function update(i, j, value) {
   save();
 }
 
-function submit(i) {
-
-  if (document.getElementById("role").value !== "User") {
-    alert("Only User can submit");
-    return;
-  }
-
-  data[i][6] = "Yes";      // Submit column
-  data[i][5] = "Pending";  // Status column
-
-  save();
-}
-
-function approve(i) {
-
-  if (document.getElementById("role").value !== "Admin") {
-    alert("Only Admin can approve");
-    return;
-  }
-
-  if (data[i][6] !== "Yes") {
-    alert("Submit first");
-    return;
-  }
-
-  data[i][7] = "Approved";   // Approval
-  data[i][5] = "Completed";  // Status
-
-  save();
-}
 
 function save() {
   localStorage.setItem("trainingData", JSON.stringify(data));
@@ -176,7 +173,8 @@ function updateDashboard() {
   let pending = 0;
 
   for (let i = 1; i < data.length; i++) {
-    if (data[i][5] === "Completed") completed++;
+
+    if (data[i][4] === "Completed") completed++;
     else pending++;
   }
 
