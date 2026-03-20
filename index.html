@@ -1,29 +1,60 @@
 <!DOCTYPE html>
-
 <html>
 <head>
-  <title>GxP Training System</title>
+<title>GxP Training System</title>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+<style>
+body { font-family: Arial; }
+.box { border:1px solid #ccc; padding:10px; margin-right:10px; }
+</style>
+
 </head>
+
 <body>
 
 <h2>GxP Training Tracker</h2>
 
-<label>Role:</label> <select id="role">
+<!-- Dashboard -->
+<div style="display:flex">
+<div class="box">Total: <span id="total">0</span></div>
+<div class="box">Completed: <span id="completed">0</span></div>
+<div class="box">Pending: <span id="pending">0</span></div>
+</div>
 
-  <option>User</option>
-  <option>Admin</option>
+<br>
+
+<!-- Role -->
+<label>Role:</label>
+<select id="role">
+<option>User</option>
+<option>Admin</option>
 </select>
 
 <br><br>
 
-<input type="file" id="fileInput" />
+<!-- Search -->
+<input type="text" id="search" placeholder="Search..." onkeyup="searchTable()">
+
+<br><br>
+
+<!-- Filter -->
+<select id="filter" onchange="filterStatus()">
+<option value="">All Status</option>
+<option value="Completed">Completed</option>
+<option value="Pending">Pending</option>
+</select>
+
+<br><br>
+
+<!-- Upload -->
+<input type="file" id="fileInput">
 <button onclick="loadExcel()">Upload Excel</button>
 
 <br><br>
 
 <table border="1" id="table"></table>
-
-<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <script>
 
@@ -57,26 +88,13 @@ function loadExcel() {
 
   reader.readAsArrayBuffer(file);
 }
-  const file = document.getElementById('fileInput').files[0];
-  const reader = new FileReader();
-
-  reader.onload = function(e) {
-    const wb = XLSX.read(e.target.result, { type: 'binary' });
-    const sheet = wb.Sheets[wb.SheetNames[0]];
-    data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-
-    localStorage.setItem("trainingData", JSON.stringify(data));
-    render();
-  };
-
-  reader.readAsBinaryString(file);
-}
 
 function render() {
 
   let html = "";
 
   data.forEach((row, i) => {
+
     html += "<tr>";
 
     row.forEach((cell, j) => {
@@ -84,10 +102,13 @@ function render() {
       if (i === 0) {
         html += "<th>" + cell + "</th>";
       } else {
-        html += `<td contenteditable="true"
-                  onblur="update(${i},${j},this.innerText)">
-                  ${cell || ""}
-                </td>`;
+
+        let editable = (j < 4); // only first columns editable
+
+        html += `<td contenteditable="${editable}"
+                    onblur="update(${i},${j},this.innerText)">
+                    ${cell || ""}
+                 </td>`;
       }
 
     });
@@ -103,6 +124,8 @@ function render() {
   });
 
   document.getElementById("table").innerHTML = html;
+
+  updateDashboard();
 }
 
 function update(i, j, value) {
@@ -111,6 +134,7 @@ function update(i, j, value) {
 }
 
 function submit(i) {
+
   const role = document.getElementById("role").value;
 
   if (role !== "User") {
@@ -125,6 +149,7 @@ function submit(i) {
 }
 
 function approve(i) {
+
   const role = document.getElementById("role").value;
 
   if (role !== "Admin") {
@@ -146,6 +171,44 @@ function approve(i) {
 function save() {
   localStorage.setItem("trainingData", JSON.stringify(data));
   render();
+}
+
+function updateDashboard() {
+
+  let total = data.length - 1;
+  let completed = 0;
+  let pending = 0;
+
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][4] === "Completed") completed++;
+    else pending++;
+  }
+
+  document.getElementById("total").innerText = total;
+  document.getElementById("completed").innerText = completed;
+  document.getElementById("pending").innerText = pending;
+}
+
+function searchTable() {
+
+  let value = document.getElementById("search").value.toLowerCase();
+  let rows = document.querySelectorAll("#table tr");
+
+  rows.forEach((row, i) => {
+    if (i === 0) return;
+    row.style.display = row.innerText.toLowerCase().includes(value) ? "" : "none";
+  });
+}
+
+function filterStatus() {
+
+  let value = document.getElementById("filter").value;
+  let rows = document.querySelectorAll("#table tr");
+
+  rows.forEach((row, i) => {
+    if (i === 0) return;
+    row.style.display = row.innerText.includes(value) || value === "" ? "" : "none";
+  });
 }
 
 render();
