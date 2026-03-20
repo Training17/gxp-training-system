@@ -30,6 +30,33 @@
 let data = JSON.parse(localStorage.getItem("trainingData") || "[]");
 
 function loadExcel() {
+
+  const file = document.getElementById("fileInput").files[0];
+
+  if (!file) {
+    alert("Select file first");
+    return;
+  }
+
+  const reader = new FileReader();
+
+  reader.onload = function(e) {
+
+    const dataArray = new Uint8Array(e.target.result);
+
+    const wb = XLSX.read(dataArray, { type: "array" });
+
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+
+    data = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+
+    localStorage.setItem("trainingData", JSON.stringify(data));
+
+    render();
+  };
+
+  reader.readAsArrayBuffer(file);
+}
   const file = document.getElementById('fileInput').files[0];
   const reader = new FileReader();
 
