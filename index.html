@@ -135,35 +135,31 @@ function update(i, j, value) {
 
 function submit(i) {
 
-  const role = document.getElementById("role").value;
-
-  if (role !== "User") {
+  if (document.getElementById("role").value !== "User") {
     alert("Only User can submit");
     return;
   }
 
-  data[i][5] = "Yes";
-  data[i][4] = "Pending";
+  data[i][6] = "Yes";      // Submit column
+  data[i][5] = "Pending";  // Status column
 
   save();
 }
 
 function approve(i) {
 
-  const role = document.getElementById("role").value;
-
-  if (role !== "Admin") {
+  if (document.getElementById("role").value !== "Admin") {
     alert("Only Admin can approve");
     return;
   }
 
-  if (data[i][5] !== "Yes") {
+  if (data[i][6] !== "Yes") {
     alert("Submit first");
     return;
   }
 
-  data[i][6] = "Approved";
-  data[i][4] = "Completed";
+  data[i][7] = "Approved";   // Approval
+  data[i][5] = "Completed";  // Status
 
   save();
 }
@@ -180,7 +176,7 @@ function updateDashboard() {
   let pending = 0;
 
   for (let i = 1; i < data.length; i++) {
-    if (data[i][4] === "Completed") completed++;
+    if (data[i][5] === "Completed") completed++;
     else pending++;
   }
 
