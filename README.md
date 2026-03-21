@@ -1,1 +1,1 @@
-# gxp-training-system
+#training-system
